@@ -15,7 +15,9 @@ import { toggleReminder } from '@/lib/reminders';
 function describe(reminder: Reminder) {
   const when = reminder.trigger === 'enter' ? 'Arriving at' : 'Leaving';
   const how = reminder.repeat ? 'every time' : 'once';
-  return `${when} ${reminder.placeLabel || 'a place'} · ${how}`;
+  // Arrival reminders only fire on a real arrival, so say so when we're already there.
+  const here = reminder.active && reminder.trigger === 'enter' && reminder.inside ? ' · you’re here now' : '';
+  return `${when} ${reminder.placeLabel || 'a place'} · ${how}${here}`;
 }
 
 function ReminderRow({ reminder }: { reminder: Reminder }) {

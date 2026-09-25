@@ -11,7 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { Reminder, Trigger } from '@/lib/db';
-import type { LatLng } from '@/lib/geo';
+import { distanceMeters, type LatLng } from '@/lib/geo';
 import { currentPosition, describePlace } from '@/lib/places';
 
 export type ReminderFormValues = Pick<
@@ -61,6 +61,8 @@ export function ReminderForm({ initial, submitLabel, onSubmit, footer }: Props) 
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const hereNow = me !== null && place !== null && distanceMeters(me, place) <= radius;
 
   const canSave = title.trim().length > 0 && place !== null && !saving;
 
@@ -133,6 +135,11 @@ export function ReminderForm({ initial, submitLabel, onSubmit, footer }: Props) 
               </ThemedText>
               {me && <Button title="My location" variant="secondary" onPress={() => pick(me)} />}
             </View>
+            {hereNow && trigger === 'enter' && (
+              <ThemedText type="small" themeColor="tint">
+                You’re here now, so this fires the next time you arrive.
+              </ThemedText>
+            )}
           </View>
 
           <View style={styles.section}>
