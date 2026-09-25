@@ -1,98 +1,103 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Link, router } from 'expo-router';
+import { FlatList, Pressable, StyleSheet, Switch, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
+import { Button } from '@/components/button';
+import { PermissionBanner } from '@/components/permission-banner';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useReminders } from '@/hooks/use-reminders';
+import { useTheme } from '@/hooks/use-theme';
+import type { Reminder } from '@/lib/db';
+import { toggleReminder } from '@/lib/reminders';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+function describe(reminder: Reminder) {
+  const when = reminder.trigger === 'enter' ? 'Arriving at' : 'Leaving';
+  const how = reminder.repeat ? 'every time' : 'once';
+  return `${when} ${reminder.placeLabel || 'a place'} · ${how}`;
+}
+
+function ReminderRow({ reminder }: { reminder: Reminder }) {
+  const theme = useTheme();
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <Pressable
+      onPress={() =>
+        router.push({ pathname: '/reminder/[id]', params: { id: String(reminder.id) } })
+      }
+      style={({ pressed }) => [
+        styles.row,
+        { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
+      ]}>
+      <View style={styles.rowText}>
+        <ThemedText
+          type="default"
+          themeColor={reminder.active ? 'text' : 'textSecondary'}
+          numberOfLines={1}>
+          {reminder.title}
+        </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
+          {describe(reminder)}
+        </ThemedText>
+      </View>
+      <Switch
+        value={reminder.active}
+        onValueChange={(active) => toggleReminder(reminder.id, active)}
+        trackColor={{ true: theme.tint }}
+      />
+    </Pressable>
   );
 }
 
-export default function HomeScreen() {
+export default function RemindersScreen() {
+  const reminders = useReminders();
+  const insets = useSafeAreaInsets();
+
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
+      <FlatList
+        data={reminders}
+        keyExtractor={(r) => String(r.id)}
+        renderItem={({ item }) => <ReminderRow reminder={item} />}
+        contentContainerStyle={styles.list}
+        ListHeaderComponent={<PermissionBanner />}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <ThemedText type="smallBold">No reminders yet</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
+              Add one for something you need to do once you get somewhere — the store, the office,
+              your parents’ place.
+            </ThemedText>
+          </View>
+        }
+      />
+      <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.three }]}>
+        <Link href="/reminder/new" asChild>
+          <Button title="New reminder" />
+        </Link>
+      </View>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
+  container: { flex: 1 },
+  list: {
+    padding: Spacing.three,
+    gap: Spacing.two,
+    width: '100%',
     maxWidth: MaxContentWidth,
+    alignSelf: 'center',
   },
-  heroSection: {
+  row: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
     gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+    padding: Spacing.three,
+    borderRadius: Spacing.three,
   },
+  rowText: { flex: 1, gap: Spacing.half },
+  empty: { alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.six },
+  center: { textAlign: 'center' },
+  footer: { paddingHorizontal: Spacing.three, paddingTop: Spacing.two },
 });

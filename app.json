@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "des-location-reminder",
+    "name": "Location Reminder",
     "slug": "des-location-reminder",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,7 +8,14 @@
     "scheme": "deslocationreminder",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.mardesnic.locationreminder",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "location",
+          "processing"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +24,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.mardesnic.locationreminder"
     },
     "web": {
       "output": "static",
@@ -32,7 +40,24 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Location Reminder checks when you arrive at or leave the places you picked, even when the app is closed.",
+          "locationWhenInUsePermission": "Location Reminder uses your location to pick places on the map.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#208AEF"
+        }
+      ],
+      "expo-sqlite",
+      "expo-background-task"
     ],
     "experiments": {
       "typedRoutes": true,
